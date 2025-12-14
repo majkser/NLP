@@ -1,0 +1,33 @@
+Make your dev life simpler - one repo to rule them all
+If you're juggling multiple apps, services, and shared libraries, you know the drill: dozens of repos, out-of-sync dependencies, and hundreds of PRs to bump one package version. A monorepo puts everything in one place and cuts most of these problems away.
+
+What is a Monorepo?
+A monorepo stores all of your projects code (or some bigger fragment e.g. all frontend related code) in a single repository instead of a forest of separate repos (Polyrepo). That unified layout makes developers lives a lot easier.
+
+Why monorepos feel nicer to developers
+Developers love the simplicity of a single workspace: everything is discoverable, you can run multiple apps locally with a single command, and changing a shared type or component is a simple edit instead of coordinating several PRs across repos. This reduces context switching and the "where is that code?" problem.
+
+For bigger companies this also simplifies managing access to the code: you don't need to grant access to many tiny repos - grant access to the monorepo and new employees can work without repeated permission requests, saving a ton of time.
+
+Real wins for shared code, types and packages
+Let's pretend that we have a full-stack TypeScript project (node.js as a backend and React/Angular/Vue as a frontend). In a monorepo you can keep libs, types, utils and other shared packages next to the apps that use them. That means:
+
+Shared TypeScript interfaces/types live in one place and are instantly used by frontend and backend.
+Shared libraries can be updated in one commit you don't have to bump a published package across many repos.
+Tooling matters - Nx
+A good monorepo is more than folders: tools like Nx build a dependency graph, run only the affected tasks, and cache results so builds/serves/tests are fast and CI cost is low. That's how monorepos should scale without turning into a slow and messy code base.
+
+Use pnpm (JS/TS projects)
+For large monorepos, prefer pnpm over npm: it uses a global content-addressable store and symlinked node_modules, saving disk and install time. This change can make your packages install 3 times faster. For big repositories that translates directly into saved minutes.
+
+Monorepo even for small teams
+Monorepos aren't only for huge orgs. Small teams and solo full-stack devs can benefit from them e.g. When backend and frontend share same programming language (JS/TS). You get consistent tooling, one place for types, and immediate cross-project refactors - often simplifying daily work more than it complicates it.
+
+When to be cautious
+Monorepos are powerful, but not zero cost. Avoid them if:
+
+Projects are utterly independent with separate lifecycles
+You won't invest in CI caching and tooling — without that, the repo can get slow
+You don't have clear ownership rules and dependency boundaries so "everyone can edit everything"
+Quick summary
+If you want faster cross-team refactors, simpler sharing of packages, fewer permission headaches in large orgs, and a nicer day-to-day developer experience, a monorepo is an excellent choice. Pair it with workspace-aware tooling (Nx/turborepo) and pnpm and you won't regret it.
