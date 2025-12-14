@@ -1,28 +1,58 @@
-class BysicTokenizer: 
+class BasicTokenizer:
+    def __init__(self):
+        self.merges = {}
+    
     def train(self, text: str, vocab_size: int, verbose=False):
+        self.merges = {} # reset merges on each training
         tokens = text.encode('utf-8')
         tokens = list(map(int, tokens))
+        
         if verbose:
             print('length of the text: ', len(text))
             print('num of tokens: ', len(tokens))
+            
         for i in range(vocab_size - 256):
             count  = self.__get_pair_counts(tokens)
             if not count:
                 break
+            
             max_count = max(count, key=count.get)
             tokens = self.__merge_pair(tokens, max_count, 256 + i)
+            self.merges[max_count] = 256 + i # record the merge operation
             if verbose:
                 print(f"Merge pair: {max_count}, New token id: {256 + i}, New length: {len(tokens)}")
+        
         if verbose:
             print('Training completed')
             print('Number of tokens after training: ', len(tokens))
-
+            print('Compression ratio: ', f'{len(text) / len(tokens):.2f}')
         
-    def encode(self, text):
-        pass
-    
-    def decode(self, ids):
-        pass
+    def encode(self, text) -> list[int]:
+        tokens = list(text.encode('utf-8'))
+        
+        while len(tokens) > 1:
+            pair_count = self.__get_pair_counts(tokens)
+            if not pair_count:
+                break
+            
+            pair_with_smallest_id = ()
+            for pair in pair_count:
+                if pair in self.merges and self.merges[pair] < self.merges.get(pair_with_smallest_id, float('inf')):
+                    pair_with_smallest_id = pair
+
+            if pair_with_smallest_id == () or pair_with_smallest_id not in self.merges.keys():
+                break
+            
+            tokens = self.__merge_pair(tokens, pair_with_smallest_id, self.merges[pair_with_smallest_id])
+                
+        return tokens
+            
+    def decode(self, ids) -> str:
+        vocab = {i: bytes([i]) for i in range(256)}
+        for merge_pair, merge_id in self.merges.items():
+            vocab[merge_id] = vocab[merge_pair[0]] + vocab[merge_pair[1]]
+        
+        return b''.join(vocab[id] for id in ids).decode('utf-8', errors='replace')
 
     def __get_pair_counts(self, tokens: list[int]) -> dict:
         count = {}
@@ -47,7 +77,7 @@ class BysicTokenizer:
         return merged_tokens
     
 if __name__ == "__main__":
-    tokenizer = BysicTokenizer()
+    tokenizer = BasicTokenizer()
     
     # prepare training data(text)
     f = open("train.txt", "r", encoding="utf-8")
