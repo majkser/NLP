@@ -1,18 +1,23 @@
 class BysicTokenizer: 
-    def train(self, text, vocab_size, verbose=False):
+    def train(self, text: str, vocab_size: int, verbose=False):
         tokens = text.encode('utf-8')
         tokens = list(map(int, tokens))
-        print(len(text))
-        #print(tokens)
-        print(len(tokens))
+        if verbose:
+            print('length of the text: ', len(text))
+            print('num of tokens: ', len(tokens))
+        for i in range(vocab_size - 256):
+            count  = self.__get_pair_counts(tokens)
+            if not count:
+                break
+            max_count = max(count, key=count.get)
+            tokens = self.__merge_pair(tokens, max_count, 256 + i)
+            if verbose:
+                print(f"Merge pair: {max_count}, New token id: {256 + i}, New length: {len(tokens)}")
+        if verbose:
+            print('Training completed')
+            print('Number of tokens after training: ', len(tokens))
+
         
-        count = self.__get_pair_counts(tokens)
-        max_count = max(count, key=count.get)
-        print((max_count))
-        
-        print(len(self.__merge_pair(tokens, max_count, 69)))
-            
-    
     def encode(self, text):
         pass
     
@@ -50,7 +55,9 @@ if __name__ == "__main__":
     f.close()
     text = text.replace("\n", " ")
     
-    tokenizer.train(text, vocab_size=100, verbose=True)
+    new_vocab_size = 256 + 30
+    
+    tokenizer.train(text, vocab_size=new_vocab_size, verbose=True)
     encoded = tokenizer.encode("This is a sample text.")
     print("Encoded:", encoded)
     decoded = tokenizer.decode(encoded)
