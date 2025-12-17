@@ -4,6 +4,7 @@ class BasicTokenizer:
     
     def train(self, text: str, vocab_size: int, verbose=False):
         self.merges = {} # reset merges on each training
+        self.vocab = {i: bytes([i]) for i in range(256)} # initialize vocab (first 256 tokens without merges)
         tokens = text.encode('utf-8')
         tokens = list(map(int, tokens))
         
@@ -12,13 +13,14 @@ class BasicTokenizer:
             print('num of tokens: ', len(tokens))
             
         for i in range(vocab_size - 256):
-            count  = self.__get_pair_counts(tokens)
+            count  = self._get_pair_counts(tokens)
             if not count:
                 break
             
             max_count = max(count, key=count.get)
-            tokens = self.__merge_pair(tokens, max_count, 256 + i)
+            tokens = self._merge_pair(tokens, max_count, 256 + i)
             self.merges[max_count] = 256 + i # record the merge operation
+            self.vocab[256 + i] = self.vocab[max_count[0]] + self.vocab[max_count[1]]
             if verbose:
                 print(f"Merge pair: {max_count}, New token id: {256 + i}, New length: {len(tokens)}")
         
@@ -31,7 +33,7 @@ class BasicTokenizer:
         tokens = list(text.encode('utf-8'))
         
         while len(tokens) > 1:
-            pair_count = self.__get_pair_counts(tokens)
+            pair_count = self._get_pair_counts(tokens)
             if not pair_count:
                 break
             
@@ -43,18 +45,17 @@ class BasicTokenizer:
             if pair_with_smallest_id == () or pair_with_smallest_id not in self.merges.keys():
                 break
             
-            tokens = self.__merge_pair(tokens, pair_with_smallest_id, self.merges[pair_with_smallest_id])
+            tokens = self._merge_pair(tokens, pair_with_smallest_id, self.merges[pair_with_smallest_id])
                 
         return tokens
             
     def decode(self, ids) -> str:
-        vocab = {i: bytes([i]) for i in range(256)}
         for merge_pair, merge_id in self.merges.items():
-            vocab[merge_id] = vocab[merge_pair[0]] + vocab[merge_pair[1]]
+            self.vocab[merge_id] = self.vocab[merge_pair[0]] + self.vocab[merge_pair[1]]
         
-        return b''.join(vocab[id] for id in ids).decode('utf-8', errors='replace')
+        return b''.join(self.vocab[id] for id in ids).decode('utf-8', errors='replace')
 
-    def __get_pair_counts(self, tokens: list[int]) -> dict:
+    def _get_pair_counts(self, tokens: list[int]) -> dict:
         count = {}
         for i in range(len(tokens) - 1):
             pair = (tokens[i], tokens[i + 1])
@@ -64,7 +65,7 @@ class BasicTokenizer:
                 count[pair] = 1
         return count
     
-    def __merge_pair(self, tokens: list[int], pair: tuple[int, int], id: int) -> list[int]:
+    def _merge_pair(self, tokens: list[int], pair: tuple[int, int], id: int) -> list[int]:
         merged_tokens = []
         i = 0
         while i < len(tokens):
