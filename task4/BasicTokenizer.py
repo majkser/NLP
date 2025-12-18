@@ -49,7 +49,7 @@ class BasicTokenizer:
                 
         return tokens
             
-    def decode(self, ids) -> str:
+    def decode(self, ids: list[int]) -> str:
         for merge_pair, merge_id in self.merges.items():
             self.vocab[merge_id] = self.vocab[merge_pair[0]] + self.vocab[merge_pair[1]]
         
