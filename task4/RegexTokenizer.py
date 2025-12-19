@@ -34,30 +34,39 @@ class RegexTokenizer(BasicTokenizer):
             self.vocab[256 + i] = self.vocab[max_count[0]] + self.vocab[max_count[1]]
             if verbose:
                 print(f"Merge pair: {max_count}, New token id: {256 + i}, New length: {sum(len(chunk) for chunk in tokens)}")
+
+        if verbose:
+            print('Training completed')
+            print('Number of tokens after training: ', sum(len(chunk) for chunk in tokens))
+            print('Compression ratio: ', f'{len(text) / sum(len(chunk) for chunk in tokens):.2f}')
     
     def encode(self, text: str) -> list[int]:
         text_chunks = self.compiled_pattern.findall(text)
         tokens = []
         
         for chunk in text_chunks:
-            chunk_tokens = super().encode(chunk)
+            chunk_bytes = chunk.encode('utf-8')
+            chunk_tokens = self._encode_chunk(chunk_bytes)
             tokens.extend(chunk_tokens)
 
         return tokens
+    
+    def _encode_chunk(self, text_bytes: bytes) -> list[int]:
+        tokens = list(text_bytes)
+        
+        while len(tokens) > 1:
+            pair_count = self._get_pair_counts(tokens)
+            if not pair_count:
+                break
+            
+            pair_with_smallest_id = ()
+            for pair in pair_count:
+                if pair in self.merges and self.merges[pair] < self.merges.get(pair_with_smallest_id, float('inf')):
+                    pair_with_smallest_id = pair
 
-    # def decode(self, ids: list[int]) -> str:
-    #     pass
-    
-if __name__ == "__main__":
-    f = open("train.txt", "r", encoding="utf-8")
-    text = f.read()
-    f.close()
-    text = text.replace("\n", " ")
-    
-    tokenizer = RegexTokenizer()
-    tokenizer.train(text, vocab_size=286, verbose=True)
-    encoded = tokenizer.encode("Hello, world! I'm testing the RegexTokenizer.")
-    print("Encoded:", encoded)
-    decoded = tokenizer.decode(encoded)
-    print("Decoded:", decoded)
-    print(decoded == "Hello, world! I'm testing the RegexTokenizer.")
+            if pair_with_smallest_id == () or pair_with_smallest_id not in self.merges.keys():
+                break
+            
+            tokens = self._merge_pair(tokens, pair_with_smallest_id, self.merges[pair_with_smallest_id])
+        
+        return tokens

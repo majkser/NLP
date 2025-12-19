@@ -50,9 +50,6 @@ class BasicTokenizer:
         return tokens
             
     def decode(self, ids: list[int]) -> str:
-        for merge_pair, merge_id in self.merges.items():
-            self.vocab[merge_id] = self.vocab[merge_pair[0]] + self.vocab[merge_pair[1]]
-        
         return b''.join(self.vocab[id] for id in ids).decode('utf-8', errors='replace')
 
     def _get_pair_counts(self, tokens: list[int]) -> dict:
@@ -76,20 +73,3 @@ class BasicTokenizer:
                 merged_tokens.append(tokens[i])
                 i += 1
         return merged_tokens
-    
-if __name__ == "__main__":
-    tokenizer = BasicTokenizer()
-    
-    # prepare training data(text)
-    f = open("train.txt", "r", encoding="utf-8")
-    text = f.read()
-    f.close()
-    text = text.replace("\n", " ")
-    
-    new_vocab_size = 256 + 30
-    
-    tokenizer.train(text, vocab_size=new_vocab_size, verbose=True)
-    encoded = tokenizer.encode("This is a sample text.")
-    print("Encoded:", encoded)
-    decoded = tokenizer.decode(encoded)
-    print("Decoded:", decoded)
